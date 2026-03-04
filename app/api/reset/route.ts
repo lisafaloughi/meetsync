@@ -7,7 +7,7 @@ export async function POST() {
     DELETE FROM availability;
     DELETE FROM agents;
     DELETE FROM activity_log;
-  `);
+  `); 
 
   return NextResponse.json({ status: "database reset" });
 }
