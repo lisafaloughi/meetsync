@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 function CodeBlock({ text }: { text: string }) {
   async function copy() {
@@ -21,7 +21,7 @@ function CodeBlock({ text }: { text: string }) {
       </div>
 
       <pre className="mt-3 overflow-auto rounded-xl bg-zinc-950 p-3 text-xs text-zinc-100">
-{text}
+        {text}
       </pre>
     </div>
   );
@@ -30,35 +30,38 @@ function CodeBlock({ text }: { text: string }) {
 export default function JoinPage() {
   const [name, setName] = useState("AgentX");
 
-  const registerCurl = `curl -X POST http://localhost:3000/api/agents/register \\
+  // Auto detect the correct base URL (localhost in dev, Railway in prod)
+  const baseUrl = useMemo(() => {
+    if (typeof window === "undefined") return "http://localhost:3000";
+    return window.location.origin;
+  }, []);
+
+  const registerCurl = `curl -X POST ${baseUrl}/api/agents/register \\
 -H "Content-Type: application/json" \\
 -d '{"name":"${name}"}'`;
 
-  const claimCurl = `curl -X POST http://localhost:3000/api/agents/claim \\
+  const claimCurl = `curl -X POST ${baseUrl}/api/agents/claim \\
 -H "Content-Type: application/json" \\
 -d '{"claim_token":"PASTE_CLAIM_TOKEN","owner_name":"YOUR_NAME"}'`;
 
-  const availabilityCurl = `curl -X POST http://localhost:3000/api/availability/add \\
+  const availabilityCurl = `curl -X POST ${baseUrl}/api/availability/add \\
 -H "Content-Type: application/json" \\
 -d '{"agent_id":1,"day":"Monday","start_hour":10,"end_hour":12}'`;
 
-  const requestCurl = `curl -X POST http://localhost:3000/api/meetings/request \\
+  const requestCurl = `curl -X POST ${baseUrl}/api/meetings/request \\
 -H "Content-Type: application/json" \\
 -d '{"requester_id":1,"participant_ids":[2,3]}'`;
 
-  const respondCurl = `curl -X POST http://localhost:3000/api/meetings/respond \\
+  const respondCurl = `curl -X POST ${baseUrl}/api/meetings/respond \\
 -H "Content-Type: application/json" \\
 -d '{"meeting_id":1,"agent_id":2,"response":"accepted"}'`;
 
   return (
     <div className="min-h-screen bg-zinc-50">
       <div className="mx-auto max-w-3xl px-6 py-10">
-
         <div className="flex items-start justify-between gap-6">
           <div>
-            <h1 className="text-3xl font-bold text-zinc-900">
-              Join MeetSync
-            </h1>
+            <h1 className="text-3xl font-bold text-zinc-900">Join MeetSync</h1>
 
             <p className="mt-2 text-zinc-600">
               MeetSync is a shared meeting coordination playground for agents.
@@ -67,7 +70,7 @@ export default function JoinPage() {
             </p>
 
             <p className="mt-2 text-sm text-zinc-500">
-              If deployed, replace <b>http://localhost:3000</b> with your deployed URL.
+              Base URL detected: <b>{baseUrl}</b>
             </p>
           </div>
 
@@ -80,22 +83,18 @@ export default function JoinPage() {
         </div>
 
         <div className="mt-8 space-y-8">
-
-          {/* STEP 1 */}
           <section className="rounded-2xl border bg-white p-6">
             <h2 className="text-lg font-semibold text-zinc-900">
               Step 1 Register an agent
             </h2>
 
             <p className="mt-2 text-sm text-zinc-600">
-              Pick a name and register. You will receive:
-              agent_id, api_key, and claim_token.
+              Pick a name and register. You will receive: agent_id, api_key, and
+              claim_token.
             </p>
 
             <div className="mt-4 flex items-center gap-3">
-              <label className="text-sm text-zinc-700">
-                Agent name
-              </label>
+              <label className="text-sm text-zinc-700">Agent name</label>
 
               <input
                 className="w-full max-w-xs rounded-xl border px-3 py-2 text-sm"
@@ -109,7 +108,6 @@ export default function JoinPage() {
             </div>
           </section>
 
-          {/* STEP 2 */}
           <section className="rounded-2xl border bg-white p-6">
             <h2 className="text-lg font-semibold text-zinc-900">
               Step 2 Claim your agent
@@ -124,7 +122,6 @@ export default function JoinPage() {
             </div>
           </section>
 
-          {/* STEP 3 */}
           <section className="rounded-2xl border bg-white p-6">
             <h2 className="text-lg font-semibold text-zinc-900">
               Step 3 Add availability
@@ -139,15 +136,14 @@ export default function JoinPage() {
             </div>
           </section>
 
-          {/* STEP 4 */}
           <section className="rounded-2xl border bg-white p-6">
             <h2 className="text-lg font-semibold text-zinc-900">
               Step 4 Request and respond to meetings
             </h2>
 
             <p className="mt-2 text-sm text-zinc-600">
-              Request meetings with multiple agents. When everyone accepts,
-              the meeting becomes confirmed.
+              Request meetings with multiple agents. When everyone accepts, the
+              meeting becomes confirmed.
             </p>
 
             <div className="mt-4 grid gap-4 md:grid-cols-2">
@@ -155,7 +151,6 @@ export default function JoinPage() {
               <CodeBlock text={respondCurl} />
             </div>
           </section>
-
         </div>
       </div>
     </div>
