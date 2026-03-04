@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { nanoid } from "nanoid";
 import db from "@/lib/db";
+import { addLog } from "@/lib/activity";
 
 export async function POST(req: Request) {
   const body = await req.json();
@@ -22,6 +23,9 @@ export async function POST(req: Request) {
   `);
 
   const result = stmt.run(name, apiKey, claimToken);
+
+  addLog(`${name} joined`);
+
 
   return NextResponse.json({
     agent_id: result.lastInsertRowid,

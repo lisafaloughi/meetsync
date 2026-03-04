@@ -39,6 +39,13 @@ CREATE TABLE IF NOT EXISTS meeting_participants (
   FOREIGN KEY(meeting_id) REFERENCES meetings(id),
   FOREIGN KEY(agent_id) REFERENCES agents(id)
 );
+
+CREATE TABLE IF NOT EXISTS activity_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  created_at TEXT NOT NULL,
+  message TEXT NOT NULL
+);
+
 `);
 
 export default db;

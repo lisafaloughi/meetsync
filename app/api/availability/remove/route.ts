@@ -19,23 +19,15 @@ function normalizeHours(start: number, end: number): Interval | null {
   return { start: s, end: e };
 }
 
-function mergeIntervals(intervals: Interval[]): Interval[] {
-  if (intervals.length === 0) return [];
-  const sorted = [...intervals].sort((a, b) => a.start - b.start);
+function subtractOne(a: Interval, cut: Interval): Interval[] {
+  if (cut.end <= a.start || cut.start >= a.end) return [a];
+
   const out: Interval[] = [];
-  let cur = { ...sorted[0] };
 
-  for (let i = 1; i < sorted.length; i++) {
-    const nxt = sorted[i];
-    if (nxt.start <= cur.end) {
-      cur.end = Math.max(cur.end, nxt.end);
-    } else {
-      out.push(cur);
-      cur = { ...nxt };
-    }
-  }
+  if (cut.start > a.start) out.push({ start: a.start, end: cut.start });
 
-  out.push(cur);
+  if (cut.end < a.end) out.push({ start: cut.end, end: a.end });
+
   return out;
 }
 
@@ -47,8 +39,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 
-  const normalized = normalizeHours(start_hour, end_hour);
-  if (!normalized) {
+  const cut = normalizeHours(start_hour, end_hour);
+  if (!cut) {
     return NextResponse.json(
       { error: "Invalid time range" },
       { status: 400 }
@@ -67,31 +59,35 @@ export async function POST(req: Request) {
       )
       .all(agent_id, day) as Row[];
 
-    const merged = mergeIntervals([
-      ...existing.map((r) => ({ start: r.start_hour, end: r.end_hour })),
-      normalized,
-    ]);
+    const remaining: Interval[] = [];
+
+    for (const r of existing) {
+      const parts = subtractOne(
+        { start: r.start_hour, end: r.end_hour },
+        cut
+      );
+      remaining.push(...parts);
+    }
 
     db.prepare(
       `DELETE FROM availability WHERE agent_id = ? AND day = ?`
     ).run(agent_id, day);
 
-    const ins = db.prepare(
-      `
+    const ins = db.prepare(`
       INSERT INTO availability (agent_id, day, start_hour, end_hour)
       VALUES (?, ?, ?, ?)
-      `
-    );
+    `);
 
-    for (const it of merged) {
+    for (const it of remaining) {
       ins.run(agent_id, day, it.start, it.end);
     }
 
-    return merged;
+    return remaining;
   });
 
   const result = tx();
 
+  // Fetch agent name for logging
   // Fetch agent name for logging
   const agent = db
     .prepare(`SELECT name FROM agents WHERE id = ?`)
@@ -99,7 +95,7 @@ export async function POST(req: Request) {
 
   if (agent) {
     addLog(
-      `${agent.name} added availability ${day} ${normalized.start} to ${normalized.end}`
+      `${agent.name} added availability ${day} ${cut.start} to ${cut.end}`
     );
 
     const mergedText = result
@@ -109,5 +105,5 @@ export async function POST(req: Request) {
     addLog(`${agent.name} availability now: ${day} ${mergedText}`);
   }
 
-  return NextResponse.json({ success: true, merged: result });
+  return NextResponse.json({ success: true, remaining: result });
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import db from "@/lib/db";
+import { getRecentLogs } from "@/lib/activity";
 
 export async function GET() {
   const agents = db
@@ -56,6 +57,7 @@ export async function GET() {
     agents,
     availability,
     meetings: meetingsWithParticipants,
+    logs: getRecentLogs(30),
     server_time: new Date().toISOString(),
   });
 }

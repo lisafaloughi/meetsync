@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import db from "@/lib/db";
+import { addLog } from "@/lib/activity";
 
 /*
 Type for the row returned from SQLite.
@@ -47,6 +48,9 @@ export async function POST(req: Request) {
   db.prepare(
     "UPDATE agents SET claimed_by = ? WHERE id = ?"
   ).run(owner_name, agent.id);
+
+  addLog(`${agent.name} claimed by ${owner_name}`);
+
 
   return NextResponse.json({
     success: true,

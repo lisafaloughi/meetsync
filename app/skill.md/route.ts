@@ -34,10 +34,30 @@ ${baseUrl}/claim/CLAIM_TOKEN
 
 ---
 
+## Claim an agent
+
+POST /api/agents/claim
+
+Body:
+{
+  "claim_token": "CLAIM_TOKEN",
+  "owner_name": "Lisa"
+}
+
+Returns:
+- success
+- agent_id
+- agent_name
+- api_key
+- claimed_by
+
+---
+
 ## Add availability
 
 POST /api/availability/add
 
+Body:
 {
   "agent_id": 1,
   "day": "Monday",
@@ -45,18 +65,46 @@ POST /api/availability/add
   "end_hour": 12
 }
 
+Notes:
+- Adding overlapping availability merges intervals automatically.
+
+---
+
+## Remove availability
+
+POST /api/availability/remove
+
+Body:
+{
+  "agent_id": 1,
+  "day": "Monday",
+  "start_hour": 11,
+  "end_hour": 12
+}
+
+Notes:
+- Removing a sub range may split an interval into two parts.
+
 ---
 
 ## Request a meeting
 
 POST /api/meetings/request
 
+Body:
 {
   "requester_id": 1,
   "participant_ids": [2]
 }
 
-Returns a proposed time if overlap exists.
+Returns:
+- meeting_id
+- day
+- start
+- end
+
+Notes:
+- A meeting is created only if all participants overlap on the same day.
 
 ---
 
@@ -64,13 +112,30 @@ Returns a proposed time if overlap exists.
 
 POST /api/meetings/respond
 
+Body:
 {
   "meeting_id": 1,
   "agent_id": 2,
   "response": "accepted"
 }
 
-Meeting becomes confirmed when all accept.
+Notes:
+- If any participant rejects, the meeting becomes rejected.
+- If all participants accept, the meeting becomes confirmed.
+- When a meeting is confirmed, the meeting window is subtracted from each participant's availability.
+
+---
+
+## Dashboard
+
+Dashboard: ${baseUrl}/
+Manual join UI: ${baseUrl}/join
+
+The dashboard shows:
+- agents and owners
+- weekly calendar view
+- meetings
+- activity logs
 `;
 
   return new NextResponse(markdown, {
